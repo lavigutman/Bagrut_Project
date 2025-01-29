@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "369299770563",
+    "project_id": "bagrut-project-129a3",
+    "storage_bucket": "bagrut-project-129a3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:369299770563:android:0441def5b8955b94cba676",
+        "android_client_info": {
+          "package_name": "com.example.bagrutproject"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCEGNqU7aYc24-ILmrexd44kvDAZ7CvysA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
