@@ -1,5 +1,6 @@
 package com.example.bagrutproject;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,7 +17,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 public class SignUpFragment extends Fragment {
-    Button registerBT;
+    Button registerBT, backBT;
     EditText userNameET, passwordET, confPasswordET;
     TextView error;
 
@@ -29,6 +30,7 @@ public class SignUpFragment extends Fragment {
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.sign_up_fragment, container, false);
     }
+
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         registerBT = view.findViewById(R.id.register);
@@ -42,13 +44,28 @@ public class SignUpFragment extends Fragment {
                 FirebaseDatabase database = FirebaseDatabase.getInstance("https://bagrut-project-129a3-default-rtdb.firebaseio.com/");
                 DatabaseReference myRef = database.getReference("Users").push();
                 error.setVisibility(View.INVISIBLE);
-                if(confPasswordET.getText().toString().equals(passwordET.getText().toString())){
+                if (confPasswordET.getText().toString().equals(passwordET.getText().toString())) {
                     User user = new User(userNameET.getText().toString(), passwordET.getText().toString());
                     myRef.setValue(user);
-                }
-                else {
+                    Intent intent = new Intent(requireActivity(), MainActivity2.class);
+                    startActivity(intent);
+                } else {
                     error.setVisibility(View.VISIBLE);
                 }
-            }});
+            }
+        });
+        backBT = view.findViewById(R.id.backBT);
+        backBT.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (getParentFragmentManager().getBackStackEntryCount() > 0) {
+                    getParentFragmentManager().popBackStack();
+                } else {
+                    requireActivity().finish();
+                }
+            }
+        });
     }
 }
+
+

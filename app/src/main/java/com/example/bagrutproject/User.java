@@ -27,35 +27,5 @@ public class User {
 
     String password;
     String userName;
-
-    public MBudget getmBudget() {
-        return mBudget;
-    }
-
-    MBudget mBudget;
-
-    public User(MBudget mBudget, Balance balance, int MSpendSum, int MIncomeSum) {
-        this.mBudget = mBudget;
-        this.balance = balance;
-        this.MSpendSum = MSpendSum;
-        this.MIncomeSum = MIncomeSum;
-    }
-
-    public Balance getBalance() {
-        return balance;
-    }
-
-    Balance balance;
-
-    public int getMSpendSum() {
-        return MSpendSum;
-    }
-
-    int MSpendSum = spendings.getSpendSum();
-
-    public int getMIncomeSum() {
-        return MIncomeSum;
-    }
-
-    int MIncomeSum = incomes.getIncomeSum();
 }
+
