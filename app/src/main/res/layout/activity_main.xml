@@ -178,8 +178,22 @@
                                 android:text="Add Expense" />
 
                         </LinearLayout>
-                        <!-- Budget Details Section -->
                     </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="24dp"
+                        android:text="Recent Transactions"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recycler_transactions"
+                        android:layout_width="match_parent"
+                        android:layout_height="200dp"
+                        android:layout_marginTop="8dp"
+                        android:padding="8dp" />
                 </LinearLayout>
             </FrameLayout>
 

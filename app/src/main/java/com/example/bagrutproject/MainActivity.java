@@ -45,8 +45,15 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.text.SimpleDateFormat;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
     private DrawerLayout drawerLayout;
@@ -58,8 +65,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     String username;
     Button btnAddIncome, btnAddExpense, btnAddBudget;
     EditText editIncome, editExpense;
-    Calendar calendar;
     DonutProgress donutProgress;
+    private RecyclerView recyclerTransactions;
+    private TransactionAdapter transactionAdapter;
+    private List<Object> transactions = new ArrayList<>();
 
     @SuppressLint("ResourceAsColor")
     @Override
@@ -102,13 +111,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         updateValue(username, "incomes", added);
                         updateValue(username, "balance", added);
 
-                        // Save new Incomes object
-                        Incomes incomeEntry = new Incomes(added);  // casting double to int for Incomes constructor
+                        // Save new Incomes object with current date
+                        Incomes incomeEntry = new Incomes(added);
+                        incomeEntry.setDate(new SimpleDateFormat("dd/MM/yyyy").format(new Date()));
                         DatabaseReference incomeRef = FirebaseDatabase.getInstance()
                                 .getReference("Users")
                                 .child(username)
                                 .child("incomesList");
-                        incomeRef.push().setValue(incomeEntry);  // push creates a unique ID
+                        incomeRef.push().setValue(incomeEntry);
 
                         editIncome.setVisibility(View.GONE);
                         editIncome.setText("");
@@ -241,13 +251,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     updateValue(username, "spends", added);
                     updateValue(username, "balance", -added);
 
-                    // Save new Spendings object
-                    Spendings spendEntry = new Spendings(added); // casting double to int for Spendings constructor
+                    // Save new Spendings object with current date
+                    Spendings spendEntry = new Spendings(added);
+                    spendEntry.setDate(new SimpleDateFormat("dd/MM/yyyy").format(new Date()));
                     DatabaseReference spendRef = FirebaseDatabase.getInstance()
                             .getReference("Users")
                             .child(username)
                             .child("spendsList");
-                    spendRef.push().setValue(spendEntry);  // push creates a unique ID
+                    spendRef.push().setValue(spendEntry);
 
                     editExpense.setVisibility(View.GONE);
                     editExpense.setText("");
@@ -312,6 +323,126 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             AlertDialog dialog = builder.create();
             dialog.show();
         });
+
+        // Initialize RecyclerView
+        recyclerTransactions = findViewById(R.id.recycler_transactions);
+        recyclerTransactions.setLayoutManager(new LinearLayoutManager(this));
+        transactionAdapter = new TransactionAdapter();
+        recyclerTransactions.setAdapter(transactionAdapter);
+
+        // Load transactions
+        loadTransactions();
+    }
+
+    private void loadTransactions() {
+        if (username == null) {
+            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        DatabaseReference userRef = usersRef.child(username);
+        transactions.clear(); // Clear existing transactions before loading new ones
+        Log.d("Transactions", "Starting to load transactions for user: " + username);
+        
+        // Load incomes
+        userRef.child("incomesList").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                Log.d("Transactions", "Incomes data changed. Exists: " + snapshot.exists());
+                if (!snapshot.exists()) {
+                    Log.d("Transactions", "No incomes found, proceeding to load spends");
+                    loadSpends();
+                    return;
+                }
+
+                for (DataSnapshot incomeSnapshot : snapshot.getChildren()) {
+                    Incomes income = incomeSnapshot.getValue(Incomes.class);
+                    if (income != null) {
+                        transactions.add(income);
+                        Log.d("Transactions", "Added income: " + income.getValue() + " on " + income.getDate());
+                    } else {
+                        Log.e("Transactions", "Failed to parse income from snapshot: " + incomeSnapshot.getValue());
+                    }
+                }
+                Log.d("Transactions", "Finished loading incomes. Total transactions: " + transactions.size());
+                // Load spends after incomes
+                loadSpends();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("Transactions", "Failed to load incomes: " + error.getMessage());
+                Toast.makeText(MainActivity.this, "Failed to load incomes: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                // Still try to load spends even if incomes fail
+                loadSpends();
+            }
+        });
+    }
+
+    private void loadSpends() {
+        if (username == null) {
+            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        DatabaseReference userRef = usersRef.child(username);
+        userRef.child("spendsList").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                Log.d("Transactions", "Spends data changed. Exists: " + snapshot.exists());
+                if (!snapshot.exists()) {
+                    Log.d("Transactions", "No spends found, updating adapter with current transactions");
+                    updateTransactionsList();
+                    return;
+                }
+
+                for (DataSnapshot spendSnapshot : snapshot.getChildren()) {
+                    Spendings spend = spendSnapshot.getValue(Spendings.class);
+                    if (spend != null) {
+                        transactions.add(spend);
+                        Log.d("Transactions", "Added spending: " + spend.getValue() + " on " + spend.getDate());
+                    } else {
+                        Log.e("Transactions", "Failed to parse spending from snapshot: " + spendSnapshot.getValue());
+                    }
+                }
+                Log.d("Transactions", "Finished loading spends. Total transactions: " + transactions.size());
+                updateTransactionsList();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("Transactions", "Failed to load spends: " + error.getMessage());
+                Toast.makeText(MainActivity.this, "Failed to load spends: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                // Update the adapter with whatever transactions we have
+                updateTransactionsList();
+            }
+        });
+    }
+
+    private void updateTransactionsList() {
+        try {
+            Log.d("Transactions", "Updating transactions list. Size: " + transactions.size());
+            if (transactions.isEmpty()) {
+                Log.d("Transactions", "No transactions to display");
+                return;
+            }
+            // Sort transactions by date (most recent first)
+            Collections.sort(transactions, (o1, o2) -> {
+                String date1 = o1 instanceof Incomes ? ((Incomes) o1).getDate() : ((Spendings) o1).getDate();
+                String date2 = o2 instanceof Incomes ? ((Incomes) o2).getDate() : ((Spendings) o2).getDate();
+                
+                // Handle null dates
+                if (date1 == null) date1 = "";
+                if (date2 == null) date2 = "";
+                
+                return date2.compareTo(date1);
+            });
+            transactionAdapter.setTransactions(new ArrayList<>(transactions));
+            Log.d("Transactions", "Adapter updated with " + transactions.size() + " transactions");
+        } catch (Exception e) {
+            Log.e("Transactions", "Error updating transactions: " + e.getMessage(), e);
+            Toast.makeText(this, "Error updating transactions: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void updateValue(String username, String field, double addedAmount) {
@@ -327,6 +458,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 }
                 double updated = current + addedAmount;
                 userRef.child(field).setValue(updated);
+                
+                // Reload transactions after update
+                transactions.clear();
+                loadTransactions();
             }
 
             @Override
@@ -335,7 +470,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         });
     }
-
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {

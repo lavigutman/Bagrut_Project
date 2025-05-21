@@ -1,19 +1,29 @@
 package com.example.bagrutproject;
 
+import com.google.firebase.database.IgnoreExtraProperties;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
+@IgnoreExtraProperties
 public class Spendings {
     private double value;
     private static double MSpendSum = 0;
-    private String date; // New date field
+    private String date;
     private MBudget mBudget;
 
+    // Required empty constructor for Firebase
+    public Spendings() {
+        this.value = 0.0;
+        this.date = getCurrentDate();
+        this.mBudget = null;
+    }
+
+    // Constructor with value
     public Spendings(double value) {
         this.value = value;
         MSpendSum += value;
-        this.date = getCurrentDate(); // Set the current date
+        this.date = getCurrentDate();
         if (mBudget != null && mBudget.hasMBudget()) {
             mBudget.spend(value);
         }
@@ -28,8 +38,16 @@ public class Spendings {
         return value;
     }
 
+    public void setValue(double value) {
+        this.value = value;
+    }
+
     public String getDate() {
         return date;
+    }
+
+    public void setDate(String date) {
+        this.date = date;
     }
 
     public void resetSpendSumIfNeeded() {

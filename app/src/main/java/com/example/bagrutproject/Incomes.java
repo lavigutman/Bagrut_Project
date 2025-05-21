@@ -1,19 +1,21 @@
 package com.example.bagrutproject;
 
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 
 public class Incomes {
     private double value;
-    private static double MIncomeSum = 0;
-    private String date; // New date field
+    private String date;
 
-    // Constructor
+    // No-argument constructor required by Firebase
+    public Incomes() {
+        // Required empty constructor for Firebase
+    }
+
+    // Constructor with value
     public Incomes(double value) {
         this.value = value;
-        MIncomeSum += value;
-        this.date = getCurrentDate(); // Set the date when the object is created
+        this.date = getCurrentDate();
     }
 
     private String getCurrentDate() {
@@ -25,18 +27,15 @@ public class Incomes {
         return value;
     }
 
+    public void setValue(double value) {
+        this.value = value;
+    }
+
     public String getDate() {
         return date;
     }
 
-    public void resetIncomeSumIfNeeded() {
-        Calendar calendar = Calendar.getInstance();
-        if (calendar.get(Calendar.DAY_OF_MONTH) == 1) {
-            MIncomeSum = 0;
-        }
-    }
-
-    public double getIncomeSum() {
-        return MIncomeSum;
+    public void setDate(String date) {
+        this.date = date;
     }
 }
