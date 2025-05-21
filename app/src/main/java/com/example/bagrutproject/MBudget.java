@@ -3,15 +3,29 @@ package com.example.bagrutproject;
 import java.util.Calendar;
 
 public class MBudget {
-    public MBudget(int budget) {
+    private boolean hasBudget;
+    private double budget;
+    private int resetDay;
+    private double updateBudget;
+    private String endDate;
+
+    // Required empty constructor for Firebase
+    public MBudget() {
+    }
+
+    public MBudget(double budget, int resetDay, String endDate) {
         this.budget = budget;
+        this.resetDay = resetDay;
+        this.endDate = endDate;
+        this.updateBudget = budget;
+        this.hasBudget = true;
     }
 
-    public int getBudget() {
-        return budget;
+    public double getBudget() {
+        return this.budget;
     }
 
-    public void setBudget(int budget) {
+    public void setBudget(double budget) {
         this.budget = budget;
         this.hasBudget = true;
     }
@@ -24,13 +38,6 @@ public class MBudget {
         return hasBudget;
     }
 
-    public void spend(int value) {
-        this.budget -= value;
-    }
-
-    boolean hasBudget;
-    int budget;
-
     public int getResetDay() {
         return resetDay;
     }
@@ -39,22 +46,38 @@ public class MBudget {
         this.resetDay = resetDay;
     }
 
-    int resetDay;
-
-    public void setEndDate(int year, int month, int day) {
-        this.endDate =  day + "/" + (month + 1) + "/" + year;
+    public String getEndDate() {
+        return endDate;
     }
-    public void resetMbudget(){
+
+    public void setEndDate(String endDate) {
+        this.endDate = endDate;
+    }
+
+    public void spend(double value) {
+        this.updateBudget -= value;
+    }
+    public void setHasBudget(boolean hasBudget) {
+        this.hasBudget = hasBudget;
+    }
+
+    public void endMbudget() {
         Calendar calendar = Calendar.getInstance();
         int year = calendar.get(Calendar.YEAR);
         int month = calendar.get(Calendar.MONTH);
         int day = calendar.get(Calendar.DAY_OF_MONTH);
         String date = day + "/" + (month + 1) + "/" + year;
-        if(date.equals(endDate)) {
+        if (date.equals(endDate)) {
             hasBudget = false;
             budget = 0;
         }
     }
 
-    String endDate;
+    public void resetBudgetIfNeeded() {
+        Calendar calendar = Calendar.getInstance();
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+        if (day == resetDay) {
+            budget = 0;
+        }
+    }
 }

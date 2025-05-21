@@ -1,39 +1,45 @@
 package com.example.bagrutproject;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 
 public class Spendings {
-    public int getValue() {
-        return value;
-    }
+    private double value;
+    private static double MSpendSum = 0;
+    private String date; // New date field
+    private MBudget mBudget;
 
-    public Spendings(int value) {
+    public Spendings(double value) {
         this.value = value;
-    }
-
-    public void setValue(int value) {
-        this.value = value;
-        if(mBudget.hasMBudget())
+        MSpendSum += value;
+        this.date = getCurrentDate(); // Set the current date
+        if (mBudget != null && mBudget.hasMBudget()) {
             mBudget.spend(value);
-        MSpendSum +=value;
-    }
-    public void resetSum() {
-        Calendar calendar = Calendar.getInstance();
-        int day = calendar.get(Calendar.DAY_OF_MONTH);
-        int hour = calendar.get(Calendar.HOUR_OF_DAY);
-        int minute = calendar.get(Calendar.MINUTE);
-        int second = calendar.get(Calendar.SECOND);
-        if (day == 1 && hour == 0 && minute == 0 && second == 0) {
-            this.MSpendSum = 0;
         }
     }
 
-    int value;
-    MBudget mBudget;
-
-    public int getSpendSum() {
-        return MSpendSum;
+    private String getCurrentDate() {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        return sdf.format(new Date());
     }
 
-    int MSpendSum = 0;
+    public double getValue() {
+        return value;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public void resetSpendSumIfNeeded() {
+        Calendar calendar = Calendar.getInstance();
+        if (calendar.get(Calendar.DAY_OF_MONTH) == 1) {
+            MSpendSum = 0;
+        }
+    }
+
+    public double getSpendSum() {
+        return MSpendSum;
+    }
 }

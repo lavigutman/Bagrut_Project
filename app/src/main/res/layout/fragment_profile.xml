@@ -1,0 +1,195 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Profile Image -->
+
+    <!-- User Information Fields -->
+
+    <!-- Password Update Section -->
+
+    <ImageView
+        android:id="@+id/profile_image"
+        android:layout_width="99dp"
+        android:layout_height="84dp"
+        android:layout_gravity="center"
+        android:layout_marginTop="122dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="15dp"
+        android:contentDescription="Profile Image"
+        android:src="@drawable/ic_profile"
+        app:layout_constraintBottom_toTopOf="@+id/upload_image_btn"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/upload_image_btn"
+        android:layout_width="162dp"
+        android:layout_height="50dp"
+        android:layout_gravity="center"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="454dp"
+        android:text="Change Picture"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/edit_confirm_password"
+        app:layout_constraintTop_toBottomOf="@+id/profile_image" />
+
+    <EditText
+        android:id="@+id/edit_username"
+        android:layout_width="150dp"
+        android:layout_height="0dp"
+        android:layout_gravity="center"
+        android:layout_marginEnd="59dp"
+        android:layout_marginBottom="24dp"
+        android:hint="Username"
+        android:padding="15dp"
+        app:layout_constraintBottom_toTopOf="@+id/save_changes_btn"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/textView5"
+        app:layout_constraintTop_toBottomOf="@+id/edit_surname" />
+
+    <EditText
+        android:id="@+id/edit_name"
+        android:layout_width="150dp"
+        android:layout_height="0dp"
+        android:layout_gravity="center"
+        android:layout_marginEnd="58dp"
+        android:layout_marginBottom="16dp"
+        android:hint="First Name"
+        android:padding="15dp"
+        app:layout_constraintBottom_toTopOf="@+id/edit_surname"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/textView3"
+        app:layout_constraintTop_toBottomOf="@+id/edit_confirm_password" />
+
+    <EditText
+        android:id="@+id/edit_surname"
+        android:layout_width="150dp"
+        android:layout_height="0dp"
+        android:layout_gravity="center"
+        android:layout_marginEnd="55dp"
+        android:layout_marginBottom="16dp"
+        android:hint="Last Name"
+        android:padding="15dp"
+        app:layout_constraintBottom_toTopOf="@+id/edit_username"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/textView4"
+        app:layout_constraintTop_toBottomOf="@+id/edit_name" />
+
+    <EditText
+        android:id="@+id/edit_current_password"
+        android:layout_width="211dp"
+        android:layout_height="0dp"
+        android:layout_gravity="center"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="106dp"
+        android:layout_marginBottom="17dp"
+        android:hint="Current Password"
+        android:inputType="textPassword"
+        android:padding="15dp"
+        app:layout_constraintBottom_toTopOf="@+id/edit_new_password"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/edit_new_password"
+        android:layout_width="211dp"
+        android:layout_height="55dp"
+        android:layout_gravity="center"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="17dp"
+        android:layout_marginBottom="18dp"
+        android:hint="New Password"
+        android:inputType="textPassword"
+        android:padding="15dp"
+        app:layout_constraintBottom_toTopOf="@+id/edit_confirm_password"
+        app:layout_constraintEnd_toStartOf="@+id/upload_image_btn"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/edit_current_password" />
+
+    <EditText
+        android:id="@+id/edit_confirm_password"
+        android:layout_width="211dp"
+        android:layout_height="50dp"
+        android:layout_gravity="center"
+        android:layout_marginStart="17dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="36dp"
+        android:hint="Confirm New Password"
+        android:inputType="textPassword"
+        android:padding="15dp"
+        android:textSize="17dp"
+        app:layout_constraintBottom_toTopOf="@+id/edit_name"
+        app:layout_constraintEnd_toStartOf="@+id/upload_image_btn"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/edit_new_password" />
+
+    <Button
+        android:id="@+id/save_changes_btn"
+        android:layout_width="126dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginEnd="51dp"
+        android:layout_marginBottom="100dp"
+        android:padding="15dp"
+        android:text="Save Changes"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/edit_username"
+        app:layout_constraintTop_toBottomOf="@+id/edit_username" />
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="72dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="97dp"
+        android:text="Name:"
+        android:textSize="20dp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/edit_name"
+        app:layout_constraintEnd_toStartOf="@+id/edit_name"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/edit_name" />
+
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="124dp"
+        android:layout_height="34dp"
+        android:layout_gravity="center"
+        android:layout_marginStart="18dp"
+        android:layout_marginTop="77dp"
+        android:layout_marginEnd="56dp"
+        android:layout_marginBottom="73dp"
+        android:text="Last Name:"
+        android:textSize="20dp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/edit_username"
+        app:layout_constraintEnd_toStartOf="@+id/edit_surname"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/textView3" />
+
+    <TextView
+        android:id="@+id/textView5"
+        android:layout_width="110dp"
+        android:layout_height="33dp"
+        android:layout_gravity="center"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="85dp"
+        android:layout_marginEnd="62dp"
+        android:layout_marginBottom="83dp"
+        android:text="Username:"
+        android:textSize="20dp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/save_changes_btn"
+        app:layout_constraintEnd_toStartOf="@+id/edit_username"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/edit_surname" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

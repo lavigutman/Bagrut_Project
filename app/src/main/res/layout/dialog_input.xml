@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <EditText
+        android:id="@+id/editTextName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Name"/>
+
+    <EditText
+        android:id="@+id/editTextSurname"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Surname"/>
+
+    <EditText
+        android:id="@+id/editTextBalance"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Current Balance"
+        android:inputType="numberDecimal"/>
+
+    <EditText
+        android:id="@+id/editTextSpending"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Monthly Spending"
+        android:inputType="numberDecimal"/>
+
+    <EditText
+        android:id="@+id/editTextIncome"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Monthly Income"
+        android:inputType="numberDecimal"/>
+
+    <Button
+        android:id="@+id/buttonSave"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Save"/>
+
+</LinearLayout>

@@ -5,34 +5,38 @@ import java.util.Calendar;
 import java.util.Date;
 
 public class Incomes {
-    public Incomes(int value) {
+    private double value;
+    private static double MIncomeSum = 0;
+    private String date; // New date field
+
+    // Constructor
+    public Incomes(double value) {
         this.value = value;
+        MIncomeSum += value;
+        this.date = getCurrentDate(); // Set the date when the object is created
     }
 
-    public int getValue() {
+    private String getCurrentDate() {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        return sdf.format(new Date());
+    }
+
+    public double getValue() {
         return value;
     }
 
-    public void setValue(int value) {
-        this.value = value;
-        this.MIncomeSum+= value;
+    public String getDate() {
+        return date;
     }
-    public void resetSum() {
+
+    public void resetIncomeSumIfNeeded() {
         Calendar calendar = Calendar.getInstance();
-        int day = calendar.get(Calendar.DAY_OF_MONTH);
-        int hour = calendar.get(Calendar.HOUR_OF_DAY);
-        int minute = calendar.get(Calendar.MINUTE);
-        int second = calendar.get(Calendar.SECOND);
-        if (day == 1 && hour == 0 && minute == 0 && second == 0) {
-            this.MIncomeSum = 0;
+        if (calendar.get(Calendar.DAY_OF_MONTH) == 1) {
+            MIncomeSum = 0;
         }
     }
 
-    int value;
-
-    public int getIncomeSum() {
+    public double getIncomeSum() {
         return MIncomeSum;
     }
-
-    int MIncomeSum = 0;
 }

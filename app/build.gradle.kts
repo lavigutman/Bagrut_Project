@@ -36,7 +36,8 @@ android {
 }
 
 dependencies {
-
+    implementation("com.github.lzyzsd:circleprogress:1.2.1")
+    implementation("com.google.firebase:firebase-storage:20.3.0")
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
@@ -48,4 +49,5 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+
 }

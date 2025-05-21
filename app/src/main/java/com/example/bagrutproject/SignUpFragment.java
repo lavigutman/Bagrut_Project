@@ -18,7 +18,7 @@ import com.google.firebase.database.FirebaseDatabase;
 
 public class SignUpFragment extends Fragment {
     Button registerBT, backBT;
-    EditText userNameET, passwordET, confPasswordET;
+    EditText userNameET, passwordET, confPasswordET,nameET,surenameET,balanceET;
     TextView error;
 
     @Override
@@ -38,6 +38,9 @@ public class SignUpFragment extends Fragment {
         passwordET = view.findViewById(R.id.password);
         confPasswordET = view.findViewById(R.id.confPassword);
         error = view.findViewById(R.id.error);
+        nameET = view.findViewById(R.id.nameET);
+        surenameET = view.findViewById(R.id.surenameET);
+        balanceET = view.findViewById(R.id.balanceET);
         registerBT.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -45,10 +48,13 @@ public class SignUpFragment extends Fragment {
                 DatabaseReference myRef = database.getReference("Users").push();
                 error.setVisibility(View.INVISIBLE);
                 if (confPasswordET.getText().toString().equals(passwordET.getText().toString())) {
-                    User user = new User(userNameET.getText().toString(), passwordET.getText().toString());
+                    User user = new User(userNameET.getText().toString(), passwordET.getText().toString(), nameET.getText().toString(),surenameET.getText().toString(),Double.parseDouble(balanceET.getText().toString()));
                     myRef.setValue(user);
-                    Intent intent = new Intent(requireActivity(), MainActivity2.class);
+                    Intent intent = new Intent(requireActivity(), MainActivity.class);
                     startActivity(intent);
+                    Intent intent2 = new Intent(getActivity(), MainActivity.class);
+                    intent2.putExtra("USER_KEY", userNameET.getText().toString());
+                    startActivity(intent2);
                 } else {
                     error.setVisibility(View.VISIBLE);
                 }
