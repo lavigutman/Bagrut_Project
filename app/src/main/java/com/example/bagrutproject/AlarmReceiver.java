@@ -30,6 +30,8 @@ public class AlarmReceiver extends BroadcastReceiver {
         budgetRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (!snapshot.exists()) return;
+
                 MBudget budget = snapshot.child("Budget").getValue(MBudget.class);
                 Double spent = snapshot.child("spends").getValue(Double.class);
 
@@ -41,9 +43,13 @@ public class AlarmReceiver extends BroadcastReceiver {
                     double percentLeft = ((total - spentAmount) / total) * 100;
 
                     if (percentLeft <= 10) {
-                        NotificationUtils.sendBudgetNotification(context, "Budget Alert", "Good morning! You have less than 10% of your budget left.");
+                        NotificationUtils.sendBudgetNotification(context, 
+                            "Budget Alert", 
+                            "Good morning! You have less than 10% of your budget left.");
                     } else if (percentLeft <= 50) {
-                        NotificationUtils.sendBudgetNotification(context, "Budget Notice", "Good morning! You have less than 50% of your budget left.");
+                        NotificationUtils.sendBudgetNotification(context, 
+                            "Budget Notice", 
+                            "Good morning! You have less than 50% of your budget left.");
                     }
                 }
             }

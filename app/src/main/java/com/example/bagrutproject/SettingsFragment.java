@@ -1,7 +1,5 @@
 package com.example.bagrutproject;
 
-import static com.example.bagrutproject.NotificationUtils.sendBudgetNotification;
-
 import android.app.AlarmManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -43,6 +41,7 @@ public class SettingsFragment extends Fragment {
     private String username;
     private DatabaseReference usersRef;
     private FirebaseDatabase database;
+
     public SettingsFragment() {
         // Required empty public constructor
     }
@@ -60,19 +59,17 @@ public class SettingsFragment extends Fragment {
         }
         database = FirebaseDatabase.getInstance();
         usersRef = database.getReference("Users");
-        // Get references to the switches
-        // In your Fragment's onViewCreated or onCreateView after view is inflated
 
-// Use the same shared preferences instance
+        // Use the same shared preferences instance
         SharedPreferences sharedPreferences = requireContext().getSharedPreferences("settings", Context.MODE_PRIVATE);
 
         switchNotifications = view.findViewById(R.id.switch_notifications);
         switchDarkMode = view.findViewById(R.id.switch_dark_mode);
 
-// Load saved states (false is default here, change if needed)
+        // Load saved states
         switchNotifications.setChecked(sharedPreferences.getBoolean("notifications_enabled", false));
         switchDarkMode.setChecked(sharedPreferences.getBoolean("dark_mode_enabled", false));
-// After setting switch state from SharedPreferences:
+
         boolean notificationsEnabled = sharedPreferences.getBoolean("notifications_enabled", false);
         switchNotifications.setChecked(notificationsEnabled);
 
@@ -85,7 +82,7 @@ public class SettingsFragment extends Fragment {
             }
         }
 
-        // Then set your listener for toggle changes:
+        // Set notification toggle listener
         switchNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
             SharedPreferences.Editor editor = sharedPreferences.edit();
             editor.putBoolean("notifications_enabled", isChecked);
@@ -97,13 +94,22 @@ public class SettingsFragment extends Fragment {
                             != PackageManager.PERMISSION_GRANTED) {
                         requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
                     } else {
-                        scheduleDailyNotification(requireContext(), username);
+                        MainActivity.scheduleDailyBudgetNotification(requireContext(), username);
                     }
                 } else {
-                    scheduleDailyNotification(requireContext(), username);
+                    MainActivity.scheduleDailyBudgetNotification(requireContext(), username);
                 }
             } else {
-                cancelDailyNotification(requireContext());
+                // Cancel the daily notification
+                AlarmManager alarmManager = (AlarmManager) requireContext().getSystemService(Context.ALARM_SERVICE);
+                Intent intent = new Intent(requireContext(), AlarmReceiver.class);
+                PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                        requireContext(),
+                        0,
+                        intent,
+                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                );
+                alarmManager.cancel(pendingIntent);
             }
         });
 
@@ -125,85 +131,5 @@ public class SettingsFragment extends Fragment {
         });
         return view;
     }
-
-    private void checkAndSendBudgetNotifications() {
-        DatabaseReference budgetRef = usersRef.child(username);
-        budgetRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (!snapshot.exists()) return;
-
-                MBudget budget = snapshot.child("Budget").getValue(MBudget.class);
-                Double spent = snapshot.child("spends").getValue(Double.class);
-
-                if (budget != null && budget.hasMBudget() && spent != null) {
-                    double total = budget.getBudget();
-
-                    if (total <= 0) {
-                        Log.w("BudgetNotification", "Total budget is zero or negative — skipping notification.");
-                        return;
-                    }
-
-                    double spentAmount = spent;
-                    double percentLeft = ((total - spentAmount) / total) * 100;
-
-                    if (percentLeft <= 10) {
-                        sendBudgetNotification(requireContext(), "Budget Alert", "Good morning! You have less than 10% of your budget left.");
-                    } else if (percentLeft <= 50) {
-                        sendBudgetNotification(requireContext(), "Budget Notice", "Good morning! You have less than 50% of your budget left.");
-                    }
-                } else {
-                    Log.w("BudgetNotification", "Budget or spent value is null or invalid.");
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Log.e("BudgetNotification", "Firebase error: " + error.getMessage());
-                Toast.makeText(requireContext(), "Failed to check budget", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-}
-    private void cancelDailyNotification(Context context) {
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        Intent intent = new Intent(context, AlarmReceiver.class);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                context,
-                0,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-        alarmManager.cancel(pendingIntent);
-    }
-    public static void scheduleDailyNotification(Context context, String username) {
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-
-        Intent intent = new Intent(context, AlarmReceiver.class);
-        intent.putExtra("username", username);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY, 8);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MILLISECOND, 0);
-
-        // If the time is before now, set it for tomorrow
-        if (calendar.getTimeInMillis() < System.currentTimeMillis()) {
-            calendar.add(Calendar.DAY_OF_YEAR, 1);
-        }
-
-        alarmManager.setRepeating(
-                AlarmManager.RTC_WAKEUP,
-                calendar.getTimeInMillis(),
-                AlarmManager.INTERVAL_DAY,
-                pendingIntent
-        );
-    }
-
-
 
 }

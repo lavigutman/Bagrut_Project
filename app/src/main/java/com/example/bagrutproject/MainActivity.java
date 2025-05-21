@@ -78,6 +78,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
         setContentView(R.layout.activity_main);
         username = getIntent().getStringExtra("USER_KEY");
+        
+        // Save username to SharedPreferences
+        SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
+        prefs.edit().putString("logged_in_user", username).apply();
+        
         resetValuesIfNeeded();
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -146,7 +151,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         btnAddExpense = findViewById(R.id.btn_add_expense);
         editIncome = findViewById(R.id.edit_income);
         editExpense = findViewById(R.id.edit_expense);
-        SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
         boolean notificationsEnabled = prefs.getBoolean("notifications_enabled", false);
         String username = prefs.getString("logged_in_user", null);
 
@@ -211,6 +215,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         textBudgetTotal.setText("Total Budget: ₪" + totalBudget);
                         textBudgetSpent.setText("Amount Spent: ₪" + spentAmount);
                         textBudgetLeft.setText("Amount Left: ₪" + leftAmount);
+
+                        // Check budget percentage and send notification if needed
+                        checkBudgetPercentageAndNotify();
                     } else {
                         Toast.makeText(MainActivity.this, "Budget or spends is null", Toast.LENGTH_SHORT).show();
                     }
@@ -515,6 +522,47 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             return activeNetworkInfo != null && activeNetworkInfo.isConnected();
         }
         return false;
+    }
+
+    private void checkBudgetPercentageAndNotify() {
+        SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
+        boolean notificationsEnabled = prefs.getBoolean("notifications_enabled", false);
+        
+        if (!notificationsEnabled) return;
+
+        DatabaseReference budgetRef = usersRef.child(username);
+        budgetRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (!snapshot.exists()) return;
+
+                MBudget budget = snapshot.child("Budget").getValue(MBudget.class);
+                Double spent = snapshot.child("spends").getValue(Double.class);
+
+                if (budget != null && budget.hasMBudget() && spent != null) {
+                    double total = budget.getBudget();
+                    if (total <= 0) return;
+
+                    double spentAmount = spent;
+                    double percentLeft = ((total - spentAmount) / total) * 100;
+
+                    if (percentLeft <= 10) {
+                        NotificationUtils.sendBudgetNotification(MainActivity.this, 
+                            "Budget Alert", 
+                            "You have less than 10% of your budget left!");
+                    } else if (percentLeft <= 50) {
+                        NotificationUtils.sendBudgetNotification(MainActivity.this, 
+                            "Budget Notice", 
+                            "You have less than 50% of your budget left.");
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("BudgetNotification", "Failed to check budget: " + error.getMessage());
+            }
+        });
     }
 
 }
