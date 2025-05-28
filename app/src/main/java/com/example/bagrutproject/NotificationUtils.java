@@ -27,7 +27,7 @@ public class NotificationUtils {
         }
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
-                .setSmallIcon(R.drawable.ic_launcher_background) // replace with your app's notification icon
+                .setSmallIcon(R.mipmap.ic_icon) // use your app's notification icon
                 .setContentTitle(title)
                 .setContentText(message)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
