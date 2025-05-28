@@ -17,8 +17,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -78,6 +80,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         SharedPreferences sharedPreferences = getSharedPreferences("AppSettings", Context.MODE_PRIVATE);
         checkInternetConnection();
         boolean isDarkModeEnabled = sharedPreferences.getBoolean("dark_mode_enabled", false);
+
+        // Request exact alarm permission if needed
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+            if (!alarmManager.canScheduleExactAlarms()) {
+                Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+                startActivity(intent);
+            }
+        }
 
         // Set dark mode theme based on stored preference
         if (isDarkModeEnabled) {
@@ -225,9 +236,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         textBudgetTotal.setText("Total Budget: ₪" + totalBudget);
                         textBudgetSpent.setText("Amount Spent: ₪" + spentAmount);
                         textBudgetLeft.setText("Amount Left: ₪" + leftAmount);
-
-                        // Check budget percentage and send notification if needed
-                        checkBudgetPercentageAndNotify();
                     } else {
                         Toast.makeText(MainActivity.this, "Budget or spends is null", Toast.LENGTH_SHORT).show();
                     }
@@ -615,7 +623,21 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     public static void scheduleDailyBudgetNotification(Context context, String username) {
+        SharedPreferences prefs = context.getSharedPreferences("AppSettings", Context.MODE_PRIVATE);
+        boolean notificationsEnabled = prefs.getBoolean("notifications_enabled", false);
+        
+        if (!notificationsEnabled) return;
+
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) return;
+
+        // Check if we can schedule exact alarms
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (!alarmManager.canScheduleExactAlarms()) {
+                Log.e("Notifications", "Cannot schedule exact alarms");
+                return;
+            }
+        }
 
         Intent intent = new Intent(context, AlarmReceiver.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
@@ -625,22 +647,42 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
+        // Cancel any existing alarms first
+        alarmManager.cancel(pendingIntent);
+
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.HOUR_OF_DAY, 8);
         calendar.set(Calendar.MINUTE, 0);
         calendar.set(Calendar.SECOND, 0);
         calendar.set(Calendar.MILLISECOND, 0);
 
-        if (calendar.getTimeInMillis() < System.currentTimeMillis()) {
+        // If the time has already passed today, schedule for tomorrow
+        if (calendar.getTimeInMillis() <= System.currentTimeMillis()) {
             calendar.add(Calendar.DAY_OF_YEAR, 1);
         }
 
-        alarmManager.setRepeating(
-                AlarmManager.RTC_WAKEUP,
-                calendar.getTimeInMillis(),
-                AlarmManager.INTERVAL_DAY,
-                pendingIntent
-        );
+        Log.d("Notifications", "Scheduling notification for: " + calendar.getTime());
+
+        // Use setAlarmClock for more reliable alarms
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setAlarmClock(
+                    new AlarmManager.AlarmClockInfo(calendar.getTimeInMillis(), pendingIntent),
+                    pendingIntent
+            );
+        } else {
+            alarmManager.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    calendar.getTimeInMillis(),
+                    pendingIntent
+            );
+        }
+
+        // Save the next notification time
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putLong("next_notification_time", calendar.getTimeInMillis());
+        editor.apply();
+
+        Log.d("Notifications", "Notification scheduled successfully");
     }
     private void checkInternetConnection() {
         if (!isNetworkAvailable()) {
@@ -657,46 +699,4 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
         return false;
     }
-
-    private void checkBudgetPercentageAndNotify() {
-        SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
-        boolean notificationsEnabled = prefs.getBoolean("notifications_enabled", false);
-        
-        if (!notificationsEnabled) return;
-
-        DatabaseReference budgetRef = usersRef.child(username);
-        budgetRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (!snapshot.exists()) return;
-
-                MBudget budget = snapshot.child("Budget").getValue(MBudget.class);
-                Double spent = snapshot.child("spends").getValue(Double.class);
-
-                if (budget != null && budget.hasMBudget() && spent != null) {
-                    double total = budget.getBudget();
-                    if (total <= 0) return;
-
-                    double spentAmount = spent;
-                    double percentLeft = ((total - spentAmount) / total) * 100;
-
-                    if (percentLeft <= 10) {
-                        NotificationUtils.sendBudgetNotification(MainActivity.this, 
-                            "Budget Alert", 
-                            "You have less than 10% of your budget left!");
-                    } else if (percentLeft <= 50) {
-                        NotificationUtils.sendBudgetNotification(MainActivity.this, 
-                            "Budget Notice", 
-                            "You have less than 50% of your budget left.");
-                    }
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Log.e("BudgetNotification", "Failed to check budget: " + error.getMessage());
-            }
-        });
-    }
-
 }

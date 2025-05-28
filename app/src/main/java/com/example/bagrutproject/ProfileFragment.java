@@ -1,20 +1,13 @@
 package com.example.bagrutproject;
 
-import android.app.Activity;
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
-
 import androidx.fragment.app.Fragment;
-
-import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.firebase.database.DataSnapshot;
@@ -22,8 +15,6 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,16 +22,11 @@ import java.util.Map;
 public class ProfileFragment extends Fragment {
 
     private EditText editUsername, editName, editSurname, editCurrentPassword, editNewPassword, editConfirmPassword;
-    private ImageView profileImageView;
-    private Button uploadImageBtn, saveChangesBtn;
+    private Button saveChangesBtn;
     private String userKey;
 
     private FirebaseDatabase database;
     private DatabaseReference usersRef;
-    private FirebaseStorage storage;
-    private StorageReference storageRef;
-
-    private Uri selectedImageUri;
 
     public ProfileFragment() {
         // Required empty public constructor
@@ -52,8 +38,6 @@ public class ProfileFragment extends Fragment {
 
         // Initialize Firebase instances
         database = FirebaseDatabase.getInstance();
-        storage = FirebaseStorage.getInstance();
-        storageRef = storage.getReference();
         usersRef = database.getReference("Users");
 
         // Get user key (UID) from Arguments
@@ -173,20 +157,6 @@ public class ProfileFragment extends Fragment {
         });
     }
 
-    private void uploadProfilePicture() {
-        StorageReference profileImageRef = storageRef.child("profile_pictures/" + userKey + ".jpg");
-        profileImageRef.putFile(selectedImageUri).addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                profileImageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                    usersRef.child(userKey).child("profileImageUrl").setValue(uri.toString());
-                    Toast.makeText(getContext(), "Profile picture updated", Toast.LENGTH_SHORT).show();
-                });
-            } else {
-                Toast.makeText(getContext(), "Failed to upload image", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -200,30 +170,11 @@ public class ProfileFragment extends Fragment {
         editCurrentPassword = view.findViewById(R.id.edit_current_password);
         editNewPassword = view.findViewById(R.id.edit_new_password);
         editConfirmPassword = view.findViewById(R.id.edit_confirm_password);
-        profileImageView = view.findViewById(R.id.profile_image);
-        uploadImageBtn = view.findViewById(R.id.upload_image_btn);
         saveChangesBtn = view.findViewById(R.id.save_changes_btn);
 
-        // Set Button Click Listeners
-        uploadImageBtn.setOnClickListener(v -> openImagePicker());
+        // Set Button Click Listener
         saveChangesBtn.setOnClickListener(v -> saveChanges());
 
         return view;
-    }
-
-    private void openImagePicker() {
-        // Open gallery or camera to select profile image
-        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        startActivityForResult(intent, 100);
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == 100 && resultCode == Activity.RESULT_OK && data != null) {
-            selectedImageUri = data.getData();
-            profileImageView.setImageURI(selectedImageUri);
-        }
     }
 }

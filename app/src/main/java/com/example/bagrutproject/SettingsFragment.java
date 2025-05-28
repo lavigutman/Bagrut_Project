@@ -36,7 +36,7 @@ import java.util.Calendar;
 
 public class SettingsFragment extends Fragment {
 
-    private Switch switchNotifications, switchDarkMode;
+    private Switch switchNotifications, switchDarkMode, switchKeepSignedIn;
     private SharedPreferences sharedPreferences;
     private String username;
     private DatabaseReference usersRef;
@@ -47,31 +47,42 @@ public class SettingsFragment extends Fragment {
     }
 
     @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        
+        // Initialize SharedPreferences
+        sharedPreferences = requireContext().getSharedPreferences("AppSettings", Context.MODE_PRIVATE);
+        
+        // Initialize dark mode based on saved preference
+        boolean isDarkModeEnabled = sharedPreferences.getBoolean("dark_mode_enabled", false);
+        AppCompatDelegate.setDefaultNightMode(isDarkModeEnabled ? 
+            AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_settings, container, false);
 
-        // Initialize SharedPreferences
-        sharedPreferences = getActivity().getSharedPreferences("AppSettings", Context.MODE_PRIVATE);
         if (getArguments() != null) {
             username = getArguments().getString("USER_KEY");
         }
         database = FirebaseDatabase.getInstance();
         usersRef = database.getReference("Users");
 
-        // Use the same shared preferences instance
-        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("settings", Context.MODE_PRIVATE);
-
         switchNotifications = view.findViewById(R.id.switch_notifications);
         switchDarkMode = view.findViewById(R.id.switch_dark_mode);
+        switchKeepSignedIn = view.findViewById(R.id.switch_keep_signed_in);
 
         // Load saved states
-        switchNotifications.setChecked(sharedPreferences.getBoolean("notifications_enabled", false));
-        switchDarkMode.setChecked(sharedPreferences.getBoolean("dark_mode_enabled", false));
-
         boolean notificationsEnabled = sharedPreferences.getBoolean("notifications_enabled", false);
+        boolean darkModeEnabled = sharedPreferences.getBoolean("dark_mode_enabled", false);
+        boolean keepSignedIn = sharedPreferences.getBoolean("keep_signed_in", false);
+        
         switchNotifications.setChecked(notificationsEnabled);
+        switchDarkMode.setChecked(darkModeEnabled);
+        switchKeepSignedIn.setChecked(keepSignedIn);
 
         if (notificationsEnabled) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -94,23 +105,28 @@ public class SettingsFragment extends Fragment {
                             != PackageManager.PERMISSION_GRANTED) {
                         requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
                     } else {
-                        MainActivity.scheduleDailyBudgetNotification(requireContext(), username);
+                        scheduleDailyNotification();
                     }
                 } else {
-                    MainActivity.scheduleDailyBudgetNotification(requireContext(), username);
+                    scheduleDailyNotification();
                 }
             } else {
-                // Cancel the daily notification
-                AlarmManager alarmManager = (AlarmManager) requireContext().getSystemService(Context.ALARM_SERVICE);
-                Intent intent = new Intent(requireContext(), AlarmReceiver.class);
-                PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                        requireContext(),
-                        0,
-                        intent,
-                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-                );
-                alarmManager.cancel(pendingIntent);
+                cancelDailyNotification();
             }
+        });
+
+        // Set keep signed in toggle listener
+        switchKeepSignedIn.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putBoolean("keep_signed_in", isChecked);
+            if (isChecked) {
+                // Save the current username for auto-login
+                editor.putString("saved_username", username);
+            } else {
+                // Remove saved username
+                editor.remove("saved_username");
+            }
+            editor.apply();
         });
 
         switchDarkMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -120,16 +136,82 @@ public class SettingsFragment extends Fragment {
             editor.apply();
 
             // Apply dark mode immediately
-            if (isChecked) {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-            } else {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-            }
+            AppCompatDelegate.setDefaultNightMode(isChecked ? 
+                AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
 
             // Restart activity to apply the theme properly
             requireActivity().recreate();
         });
+        
         return view;
     }
 
+    private void scheduleDailyNotification() {
+        // Cancel any existing notifications first
+        cancelDailyNotification();
+
+        // Check if notifications are enabled
+        if (!sharedPreferences.getBoolean("notifications_enabled", false)) {
+            return;
+        }
+
+        AlarmManager alarmManager = (AlarmManager) requireContext().getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(requireContext(), AlarmReceiver.class);
+        
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                requireContext(),
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        // Set the alarm to start at 8:00 AM
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 8);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+
+        // If the time has already passed today, schedule for tomorrow
+        if (calendar.getTimeInMillis() <= System.currentTimeMillis()) {
+            calendar.add(Calendar.DAY_OF_YEAR, 1);
+        }
+
+        // Use setAlarmClock for more reliable alarms
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setAlarmClock(
+                    new AlarmManager.AlarmClockInfo(calendar.getTimeInMillis(), pendingIntent),
+                    pendingIntent
+            );
+        } else {
+            alarmManager.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    calendar.getTimeInMillis(),
+                    pendingIntent
+            );
+        }
+
+        // Save the next notification time
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putLong("next_notification_time", calendar.getTimeInMillis());
+        editor.apply();
+    }
+
+    private void cancelDailyNotification() {
+        AlarmManager alarmManager = (AlarmManager) requireContext().getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(requireContext(), AlarmReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                requireContext(),
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+        alarmManager.cancel(pendingIntent);
+
+        // Clear the saved notification time
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.remove("next_notification_time");
+        editor.remove("last_notification_time");
+        editor.apply();
+    }
 }

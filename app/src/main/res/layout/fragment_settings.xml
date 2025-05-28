@@ -9,17 +9,40 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="General Settings"
-        android:textSize="24sp"
+        android:text="Account"
+        android:textSize="20sp"
         android:textStyle="bold"
-        android:layout_gravity="center"
-        android:paddingBottom="20dp"/>
+        android:layout_marginBottom="16dp"/>
+
+    <Switch
+        android:id="@+id/switch_keep_signed_in"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Keep me signed in"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Notifications"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
 
     <Switch
         android:id="@+id/switch_notifications"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Enable Notifications"/>
+        android:text="Enable Daily Notifications"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Appearance"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
 
     <Switch
         android:id="@+id/switch_dark_mode"

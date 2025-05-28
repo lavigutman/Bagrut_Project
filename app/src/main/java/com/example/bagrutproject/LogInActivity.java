@@ -34,7 +34,6 @@ public class LogInActivity extends AppCompatActivity {
     private View.OnClickListener signUp;
 
     @Override
-
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
@@ -44,6 +43,35 @@ public class LogInActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        // Check for saved credentials
+        SharedPreferences prefs = getSharedPreferences("AppSettings", Context.MODE_PRIVATE);
+        boolean keepSignedIn = prefs.getBoolean("keep_signed_in", false);
+        String savedUsername = prefs.getString("saved_username", null);
+
+        if (keepSignedIn && savedUsername != null) {
+            // Auto-login with saved username
+            FirebaseDatabase database = FirebaseDatabase.getInstance();
+            DatabaseReference usersRef = database.getReference("Users");
+            usersRef.orderByChild("userName").equalTo(savedUsername).addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    if (dataSnapshot.exists()) {
+                        // User found, proceed to MainActivity
+                        Intent intent = new Intent(LogInActivity.this, MainActivity.class);
+                        intent.putExtra("USER_KEY", savedUsername);
+                        startActivity(intent);
+                        finish(); // Close the login activity
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    Log.w("AutoLogin", "Failed to read value.", databaseError.toException());
+                }
+            });
+        }
+
         logInBT = findViewById(R.id.logBT);
         logInBT.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -57,8 +85,7 @@ public class LogInActivity extends AppCompatActivity {
                 if (username.isEmpty() || password.isEmpty()) {
                     Toast.makeText(LogInActivity.this, "Please enter both username and password", Toast.LENGTH_SHORT).show();
                 } else {
-                    FirebaseDatabase database = FirebaseDatabase.getInstance("https://bagrut-project-129a3-default-rtdb.firebaseio.com/");
-                    database = FirebaseDatabase.getInstance();
+                    FirebaseDatabase database = FirebaseDatabase.getInstance();
                     DatabaseReference usersRef = database.getReference("Users");
                     usersRef.orderByChild("userName").equalTo(username).addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
@@ -69,17 +96,13 @@ public class LogInActivity extends AppCompatActivity {
                                     String storedPassword = userSnapshot.child("password").getValue(String.class);
                                     if (storedPassword != null && storedPassword.equals(password)) {
                                         // Password matches, login successful
-                                        SharedPreferences prefs = getSharedPreferences("settings", Context.MODE_PRIVATE);
+                                        SharedPreferences prefs = getSharedPreferences("AppSettings", Context.MODE_PRIVATE);
                                         prefs.edit().putString("logged_in_user", username).apply();
+                                        
                                         Intent intent = new Intent(LogInActivity.this, MainActivity.class);
+                                        intent.putExtra("USER_KEY", username);
                                         startActivity(intent);
-                                        Intent intent2 = new Intent(LogInActivity.this, MainActivity.class);
-                                        intent2.putExtra("USER_KEY",username);
-                                        startActivity(intent2);
-                                        // Continue to the next activity (e.g., LogInActivity or Dashboard)
-                                        // Intent intent = new Intent(LoginActivity.this, LogInActivity.class);
-                                        // startActivity(intent);
-                                        // finish();  // Optional: Close login screen
+                                        finish(); // Close the login activity
                                     } else {
                                         // Password does not match
                                         Toast.makeText(LogInActivity.this, "Incorrect password", Toast.LENGTH_SHORT).show();
@@ -119,13 +142,11 @@ public class LogInActivity extends AppCompatActivity {
                 fragmentTransaction.commit();
             }
         });
-
     }
+
     private boolean isInternetAvailable() {
         android.net.ConnectivityManager connectivityManager = (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         android.net.NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
         return networkInfo != null && networkInfo.isConnected();
     }
-
-    
 }
