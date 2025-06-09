@@ -215,6 +215,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         loadTransactions();
     }
 
+    /**
+     * Handles the addition of a new budget entry through a dialog interface.
+     * This method:
+     * 1. Creates a dialog with input fields for budget amount, reset day, and end date
+     * 2. Validates the input data
+     * 3. Creates a new MBudget object with the provided information
+     * 4. Saves the budget to Firebase database
+     * 5. Updates the UI with the new budget information
+     */
     private void addBudget() {
         checkInternetConnection();
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -273,6 +282,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         dialog.show();
     }
 
+    /**
+     * Handles the addition of a new expense entry.
+     * This method:
+     * 1. Toggles the expense input field visibility
+     * 2. Validates the input amount
+     * 3. Updates the user's balance and expense totals in Firebase
+     * 4. Creates a new Spendings object with the current date
+     * 5. Updates the transaction history
+     */
     private void addExpense() {
         checkInternetConnection();
         if (editExpense.getVisibility() == View.GONE) {
@@ -295,6 +313,41 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
                 editExpense.setVisibility(View.GONE);
                 editExpense.setText("");
+            }
+        }
+    }
+
+    /**
+     * Handles the addition of a new income entry.
+     * This method:
+     * 1. Toggles the income input field visibility
+     * 2. Validates the input amount
+     * 3. Updates the user's balance and income totals in Firebase
+     * 4. Creates a new Incomes object with the current date
+     * 5. Updates the transaction history
+     */
+    private void addIncome() {
+        checkInternetConnection();
+        if (editIncome.getVisibility() == View.GONE) {
+            editIncome.setVisibility(View.VISIBLE);
+        } else {
+            String val = editIncome.getText().toString().trim();
+            if (!val.isEmpty()) {
+                double added = Double.parseDouble(val);
+                updateValue(username, "incomes", added);
+                updateValue(username, "balance", added);
+
+                // Save new Incomes object with current date
+                Incomes incomeEntry = new Incomes(added);
+                incomeEntry.setDate(new SimpleDateFormat("dd/MM/yyyy").format(new Date()));
+                DatabaseReference incomeRef = FirebaseDatabase.getInstance()
+                        .getReference("Users")
+                        .child(username)
+                        .child("incomesList");
+                incomeRef.push().setValue(incomeEntry);
+
+                editIncome.setVisibility(View.GONE);
+                editIncome.setText("");
             }
         }
     }
@@ -454,6 +507,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         });
     }
 
+    /**
+     * Handles navigation item selection in the navigation drawer.
+     * This method:
+     * 1. Checks internet connectivity
+     * 2. Handles navigation to different sections (Home, Profile, Settings)
+     * 3. Manages the logout process
+     * 4. Updates UI visibility accordingly
+     *
+     * @param item The selected MenuItem
+     * @return true to indicate the event was handled
+     */
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         checkInternetConnection();
@@ -498,6 +562,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         return true;
     }
 
+    /**
+     * Handles the back button press event.
+     * This method:
+     * 1. Closes the navigation drawer if it's open
+     * 2. Otherwise, performs the default back button behavior
+     */
+    @Override
     public void onBackPressed() {
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
             drawerLayout.closeDrawer(GravityCompat.START);
@@ -680,6 +751,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     /**
      * Checks the current internet connection and displays a toast message if no connection is available.
+     * This method is called before performing network operations to ensure connectivity.
      */
     private void checkInternetConnection() {
         if (!isNetworkAvailable()) {
@@ -689,6 +761,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     /**
      * Checks if the device has an active internet connection.
+     * This method is used to verify network connectivity before performing network operations.
+     *
      * @return true if there is an active internet connection, false otherwise
      */
     private boolean isNetworkAvailable() {
@@ -702,37 +776,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     /**
-     * Handles adding a new income entry to the user's account.
-     * Updates the UI and Firebase database with the new income amount.
-     */
-    private void addIncome() {
-        checkInternetConnection();
-        if (editIncome.getVisibility() == View.GONE) {
-            editIncome.setVisibility(View.VISIBLE);
-        } else {
-            String val = editIncome.getText().toString().trim();
-            if (!val.isEmpty()) {
-                double added = Double.parseDouble(val);
-                updateValue(username, "incomes", added);
-                updateValue(username, "balance", added);
-
-                // Save new Incomes object with current date
-                Incomes incomeEntry = new Incomes(added);
-                incomeEntry.setDate(new SimpleDateFormat("dd/MM/yyyy").format(new Date()));
-                DatabaseReference incomeRef = FirebaseDatabase.getInstance()
-                        .getReference("Users")
-                        .child(username)
-                        .child("incomesList");
-                incomeRef.push().setValue(incomeEntry);
-
-                editIncome.setVisibility(View.GONE);
-                editIncome.setText("");
-            }
-        }
-    }
-
-    /**
      * Updates the UI text fields with the user's current financial information.
+     * This method:
+     * 1. Retrieves income, expense, and balance data from Firebase
+     * 2. Updates the corresponding TextViews with formatted values
+     * 3. Sets appropriate text colors based on balance status
+     * 
      * @param snapshot The DataSnapshot containing the user's financial data
      */
     private void updateTexts(DataSnapshot snapshot) {
@@ -761,6 +810,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     /**
      * Updates the UI with the user's current budget information and progress.
+     * This method:
+     * 1. Retrieves budget and spending data from Firebase
+     * 2. Calculates remaining budget and spending percentage
+     * 3. Updates the donut progress indicator
+     * 4. Updates the budget-related TextViews with formatted values
+     * 
      * @param snapshot The DataSnapshot containing the user's budget data
      */
     private void updateTextsBudget(DataSnapshot snapshot) {
