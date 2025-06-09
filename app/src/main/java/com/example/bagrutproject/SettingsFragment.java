@@ -34,6 +34,14 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.Calendar;
 
+/**
+ * Fragment that manages application settings and preferences.
+ * This fragment handles:
+ * - Dark mode theme toggling
+ * - Notification preferences
+ * - Daily notification scheduling
+ * - User preference persistence using SharedPreferences
+ */
 public class SettingsFragment extends Fragment {
 
     private Switch switchNotifications, switchDarkMode, switchKeepSignedIn;
@@ -146,6 +154,11 @@ public class SettingsFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Schedules a daily notification for budget updates.
+     * The notification will be sent at 8:00 AM if notifications are enabled.
+     * Uses AlarmManager to ensure reliable delivery of notifications.
+     */
     private void scheduleDailyNotification() {
         // Cancel any existing notifications first
         cancelDailyNotification();
@@ -197,6 +210,10 @@ public class SettingsFragment extends Fragment {
         editor.apply();
     }
 
+    /**
+     * Cancels any existing daily notifications.
+     * Removes the scheduled alarm and clears related SharedPreferences.
+     */
     private void cancelDailyNotification() {
         AlarmManager alarmManager = (AlarmManager) requireContext().getSystemService(Context.ALARM_SERVICE);
         Intent intent = new Intent(requireContext(), AlarmReceiver.class);

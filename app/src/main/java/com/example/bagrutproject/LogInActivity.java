@@ -27,6 +27,14 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+/**
+ * Activity responsible for user authentication and login functionality.
+ * This activity handles:
+ * - User login with username and password
+ * - Auto-login functionality for users who chose to stay signed in
+ * - Navigation to the main application after successful authentication
+ * - User authentication against Firebase database
+ */
 public class LogInActivity extends AppCompatActivity {
     Button logInBT,signBT;
     EditText userNameET, passwordET;
@@ -144,6 +152,10 @@ public class LogInActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Checks if the device has an active internet connection.
+     * @return true if there is an active internet connection, false otherwise
+     */
     private boolean isInternetAvailable() {
         android.net.ConnectivityManager connectivityManager = (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         android.net.NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();

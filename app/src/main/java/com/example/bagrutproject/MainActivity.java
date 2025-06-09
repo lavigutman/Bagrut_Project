@@ -112,29 +112,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
 
             btnAddIncome.setOnClickListener(view -> {
-                checkInternetConnection();
-                if (editIncome.getVisibility() == View.GONE) {
-                    editIncome.setVisibility(View.VISIBLE);
-                } else {
-                    String val = editIncome.getText().toString().trim();
-                    if (!val.isEmpty()) {
-                        double added = Double.parseDouble(val);
-                        updateValue(username, "incomes", added);
-                        updateValue(username, "balance", added);
-
-                        // Save new Incomes object with current date
-                        Incomes incomeEntry = new Incomes(added);
-                        incomeEntry.setDate(new SimpleDateFormat("dd/MM/yyyy").format(new Date()));
-                        DatabaseReference incomeRef = FirebaseDatabase.getInstance()
-                                .getReference("Users")
-                                .child(username)
-                                .child("incomesList");
-                        incomeRef.push().setValue(incomeEntry);
-
-                        editIncome.setVisibility(View.GONE);
-                        editIncome.setText("");
-                    }
-                }
+               addIncome();
             });
             drawerLayout.addDrawerListener(toggle);
             toggle.syncState();
@@ -184,27 +162,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         userRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                checkInternetConnection();
-                if (snapshot.exists()) {
-                    boolean hasIncome = snapshot.hasChild("incomes");
-                    boolean hasExpense = snapshot.hasChild("spends");
-
-                    Double income = hasIncome ? snapshot.child("incomes").getValue(Double.class) : 0.0;
-                    Double expense = hasExpense ? snapshot.child("spends").getValue(Double.class) : 0.0;
-                    Double balance = snapshot.child("balance").getValue(Double.class);
-
-                    textIncome.setText("Monthly Income: ₪" + String.format("%.2f", income));
-                    textExpense.setText("Monthly Expense: ₪" + String.format("%.2f", expense));
-                    textBalance.setText(balance != null && balance != 0 ? "₪" + String.format("%.2f", balance) : "₪ -");
-
-                    if (balance != null) {
-                        if (balance < 0) {
-                            textBalance.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
-                        } else {
-                            textBalance.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
-                        }
-                    }
-                }
+                updateTexts(snapshot);
             }
 
             @Override
@@ -218,28 +176,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         budgetRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.exists()) {
-                    MBudget budget = snapshot.child("Budget").getValue(MBudget.class);
-                    Double totalSpends = snapshot.child("spends").getValue(Double.class);
-
-                    if (budget != null && totalSpends != null) {
-                        double totalBudget = budget.getBudget();
-                        double spentAmount = totalSpends;
-                        double leftAmount = totalBudget - spentAmount;
-
-                        int percentSpent = (int) ((spentAmount / totalBudget) * 100);
-                        if (percentSpent > 100) percentSpent = 100;
-
-                        donutProgress.setProgress(percentSpent);
-                        donutProgress.setText(percentSpent + "%");
-
-                        textBudgetTotal.setText("Total Budget: ₪" + totalBudget);
-                        textBudgetSpent.setText("Amount Spent: ₪" + spentAmount);
-                        textBudgetLeft.setText("Amount Left: ₪" + leftAmount);
-                    } else {
-                        Toast.makeText(MainActivity.this, "Budget or spends is null", Toast.LENGTH_SHORT).show();
-                    }
-                }
+                updateTextsBudget(snapshot);
             }
 
             @Override
@@ -249,87 +186,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         });
 
         btnAddExpense.setOnClickListener(view -> {
-            checkInternetConnection();
-            if (editExpense.getVisibility() == View.GONE) {
-                editExpense.setVisibility(View.VISIBLE);
-            } else {
-                String val = editExpense.getText().toString().trim();
-                if (!val.isEmpty()) {
-                    double added = Double.parseDouble(val);
-                    updateValue(username, "spends", added);
-                    updateValue(username, "balance", -added);
-
-                    // Save new Spendings object with current date
-                    Spendings spendEntry = new Spendings(added);
-                    spendEntry.setDate(new SimpleDateFormat("dd/MM/yyyy").format(new Date()));
-                    DatabaseReference spendRef = FirebaseDatabase.getInstance()
-                            .getReference("Users")
-                            .child(username)
-                            .child("spendsList");
-                    spendRef.push().setValue(spendEntry);
-
-                    editExpense.setVisibility(View.GONE);
-                    editExpense.setText("");
-                }
-            }
+            addExpense();
         });
 
         btnAddBudget.setOnClickListener(view -> {
-            checkInternetConnection();
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Set Budget");
-
-            // Inflate a custom layout for the dialog
-            View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_budget, null);
-            builder.setView(dialogView);
-            EditText editBudgetAmount = dialogView.findViewById(R.id.edit_budget_amount);
-            NumberPicker numberPickerResetDay = dialogView.findViewById(R.id.number_picker_reset_day);
-            DatePicker datePickerEndDate = dialogView.findViewById(R.id.date_picker_end_date);
-
-            // Set NumberPicker range
-            numberPickerResetDay.setMinValue(1);
-            numberPickerResetDay.setMaxValue(10);
-
-            builder.setPositiveButton("Save", (dialog, which) -> {
-                String amountText = editBudgetAmount.getText().toString().trim();
-                int resetDay = numberPickerResetDay.getValue();
-                int year = datePickerEndDate.getYear();
-                int month = datePickerEndDate.getMonth();
-                int day = datePickerEndDate.getDayOfMonth();
-
-                String endDate = day + "/" + (month + 1) + "/" + year;
-
-                if (!amountText.isEmpty()) {
-                    double budgetAmount = Double.parseDouble(amountText);
-
-                    // Create MBudget object
-                    MBudget mBudget = new MBudget(budgetAmount, resetDay, endDate);
-
-                    // Save to Firebase
-                    DatabaseReference databaseReference = FirebaseDatabase.getInstance()
-                            .getReference("Users").child(username).child("Budget");
-
-                    databaseReference.setValue(mBudget).addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            Toast.makeText(this, "Budget added successfully!", Toast.LENGTH_SHORT).show();
-
-                            // Update TextViews
-                            textBudgetTotal.setText("Total Budget: ₪" + mBudget.getBudget());
-                            textBudgetLeft.setText("Amount Left: ₪" + mBudget.getBudget());
-                            textBudgetSpent.setText("Amount Spent: ₪0");
-                        } else {
-                            Toast.makeText(this, "Failed to add budget", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                } else {
-                    Toast.makeText(this, "Please enter a budget amount", Toast.LENGTH_SHORT).show();
-                }
-            });
-
-            builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
-
-            AlertDialog dialog = builder.create();
-            dialog.show();
+            addBudget();
         });
 
         // Initialize RecyclerView
@@ -340,6 +201,90 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         // Load transactions
         loadTransactions();
+    }
+
+    private void addBudget() {
+        checkInternetConnection();
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Set Budget");
+
+        // Inflate a custom layout for the dialog
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_budget, null);
+        builder.setView(dialogView);
+        EditText editBudgetAmount = dialogView.findViewById(R.id.edit_budget_amount);
+        NumberPicker numberPickerResetDay = dialogView.findViewById(R.id.number_picker_reset_day);
+        DatePicker datePickerEndDate = dialogView.findViewById(R.id.date_picker_end_date);
+
+        // Set NumberPicker range
+        numberPickerResetDay.setMinValue(1);
+        numberPickerResetDay.setMaxValue(10);
+
+        builder.setPositiveButton("Save", (dialog, which) -> {
+            String amountText = editBudgetAmount.getText().toString().trim();
+            int resetDay = numberPickerResetDay.getValue();
+            int year = datePickerEndDate.getYear();
+            int month = datePickerEndDate.getMonth();
+            int day = datePickerEndDate.getDayOfMonth();
+
+            String endDate = day + "/" + (month + 1) + "/" + year;
+
+            if (!amountText.isEmpty()) {
+                double budgetAmount = Double.parseDouble(amountText);
+
+                // Create MBudget object
+                MBudget mBudget = new MBudget(budgetAmount, resetDay, endDate);
+
+                // Save to Firebase
+                DatabaseReference databaseReference = FirebaseDatabase.getInstance()
+                        .getReference("Users").child(username).child("Budget");
+
+                databaseReference.setValue(mBudget).addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Toast.makeText(this, "Budget added successfully!", Toast.LENGTH_SHORT).show();
+
+                        // Update TextViews
+                        textBudgetTotal.setText("Total Budget: ₪" + mBudget.getBudget());
+                        textBudgetLeft.setText("Amount Left: ₪" + mBudget.getBudget());
+                        textBudgetSpent.setText("Amount Spent: ₪0");
+                    } else {
+                        Toast.makeText(this, "Failed to add budget", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } else {
+                Toast.makeText(this, "Please enter a budget amount", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    private void addExpense() {
+        checkInternetConnection();
+        if (editExpense.getVisibility() == View.GONE) {
+            editExpense.setVisibility(View.VISIBLE);
+        } else {
+            String val = editExpense.getText().toString().trim();
+            if (!val.isEmpty()) {
+                double added = Double.parseDouble(val);
+                updateValue(username, "spends", added);
+                updateValue(username, "balance", -added);
+
+                // Save new Spendings object with current date
+                Spendings spendEntry = new Spendings(added);
+                spendEntry.setDate(new SimpleDateFormat("dd/MM/yyyy").format(new Date()));
+                DatabaseReference spendRef = FirebaseDatabase.getInstance()
+                        .getReference("Users")
+                        .child(username)
+                        .child("spendsList");
+                spendRef.push().setValue(spendEntry);
+
+                editExpense.setVisibility(View.GONE);
+                editExpense.setText("");
+            }
+        }
     }
 
     private void loadTransactions() {
@@ -698,5 +643,77 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             return activeNetworkInfo != null && activeNetworkInfo.isConnected();
         }
         return false;
+    }
+    private void addIncome(){
+        checkInternetConnection();
+        if (editIncome.getVisibility() == View.GONE) {
+            editIncome.setVisibility(View.VISIBLE);
+        } else {
+            String val = editIncome.getText().toString().trim();
+            if (!val.isEmpty()) {
+                double added = Double.parseDouble(val);
+                updateValue(username, "incomes", added);
+                updateValue(username, "balance", added);
+
+                // Save new Incomes object with current date
+                Incomes incomeEntry = new Incomes(added);
+                incomeEntry.setDate(new SimpleDateFormat("dd/MM/yyyy").format(new Date()));
+                DatabaseReference incomeRef = FirebaseDatabase.getInstance()
+                        .getReference("Users")
+                        .child(username)
+                        .child("incomesList");
+                incomeRef.push().setValue(incomeEntry);
+
+                editIncome.setVisibility(View.GONE);
+                editIncome.setText("");
+            }
+        }
+    }
+    private void updateTexts(DataSnapshot snapshot){
+        checkInternetConnection();
+        if (snapshot.exists()) {
+            boolean hasIncome = snapshot.hasChild("incomes");
+            boolean hasExpense = snapshot.hasChild("spends");
+
+            Double income = hasIncome ? snapshot.child("incomes").getValue(Double.class) : 0.0;
+            Double expense = hasExpense ? snapshot.child("spends").getValue(Double.class) : 0.0;
+            Double balance = snapshot.child("balance").getValue(Double.class);
+
+            textIncome.setText("Monthly Income: ₪" + String.format("%.2f", income));
+            textExpense.setText("Monthly Expense: ₪" + String.format("%.2f", expense));
+            textBalance.setText(balance != null && balance != 0 ? "₪" + String.format("%.2f", balance) : "₪ -");
+
+            if (balance != null) {
+                if (balance < 0) {
+                    textBalance.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+                } else {
+                    textBalance.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
+                }
+            }
+        }
+    }
+    private void updateTextsBudget(DataSnapshot snapshot){
+        if (snapshot.exists()) {
+            MBudget budget = snapshot.child("Budget").getValue(MBudget.class);
+            Double totalSpends = snapshot.child("spends").getValue(Double.class);
+
+            if (budget != null && totalSpends != null) {
+                double totalBudget = budget.getBudget();
+                double spentAmount = totalSpends;
+                double leftAmount = totalBudget - spentAmount;
+
+                int percentSpent = (int) ((spentAmount / totalBudget) * 100);
+                if (percentSpent > 100) percentSpent = 100;
+
+                donutProgress.setProgress(percentSpent);
+                donutProgress.setText(percentSpent + "%");
+
+                textBudgetTotal.setText("Total Budget: ₪" + totalBudget);
+                textBudgetSpent.setText("Amount Spent: ₪" + spentAmount);
+                textBudgetLeft.setText("Amount Left: ₪" + leftAmount);
+            } else {
+                Toast.makeText(MainActivity.this, "Budget or spends is null", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }

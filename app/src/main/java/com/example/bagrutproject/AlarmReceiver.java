@@ -18,9 +18,26 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.Calendar;
 
+/**
+ * BroadcastReceiver that handles budget-related notifications.
+ * This receiver is triggered by the AlarmManager to check the user's budget status
+ * and send notifications when the budget reaches certain thresholds (10% or 50% remaining).
+ * The notifications are sent once per day at 8:00 AM if enabled in the app settings.
+ */
 public class AlarmReceiver extends BroadcastReceiver {
     private static final String TAG = "AlarmReceiver";
 
+    /**
+     * Called when the BroadcastReceiver is receiving an Intent broadcast.
+     * Checks the user's budget status and sends notifications if:
+     * - Notifications are enabled
+     * - User is logged in
+     * - No notification was sent today
+     * - Budget is below 50% or 10% threshold
+     * 
+     * @param context The Context in which the receiver is running
+     * @param intent The Intent being received
+     */
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.d(TAG, "Alarm received");
