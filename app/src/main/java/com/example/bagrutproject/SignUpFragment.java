@@ -16,21 +16,44 @@ import androidx.fragment.app.Fragment;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+/**
+ * Fragment that handles user registration functionality.
+ * This fragment provides a form for new users to create an account,
+ * including fields for username, password, name, surname, and initial balance.
+ * It validates user input and stores the new user data in Firebase.
+ */
 public class SignUpFragment extends Fragment {
     Button registerBT, backBT;
     EditText userNameET, passwordET, confPasswordET,nameET,surenameET,balanceET;
     TextView error;
 
+    /**
+     * Called when the fragment is first created.
+     * @param savedInstanceState If the fragment is being re-created from a previous saved state, this is the state.
+     */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
     }
 
+    /**
+     * Creates and returns the view hierarchy associated with the fragment.
+     * @param inflater The LayoutInflater object that can be used to inflate any views in the fragment
+     * @param container If non-null, this is the parent view that the fragment's UI should be attached to
+     * @param savedInstanceState If non-null, this fragment is being re-constructed from a previous saved state
+     * @return The View for the fragment's UI
+     */
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.sign_up_fragment, container, false);
     }
 
+    /**
+     * Called immediately after onCreateView() has returned, but before any saved state has been restored.
+     * Initializes UI components and sets up click listeners for registration and back buttons.
+     * @param view The View returned by onCreateView()
+     * @param savedInstanceState If non-null, this fragment is being re-constructed from a previous saved state
+     */
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         registerBT = view.findViewById(R.id.register);

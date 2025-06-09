@@ -36,10 +36,8 @@ import com.google.firebase.database.ValueEventListener;
  * - User authentication against Firebase database
  */
 public class LogInActivity extends AppCompatActivity {
-    Button logInBT,signBT;
+    Button logInBT, signBT;
     EditText userNameET, passwordET;
-    private View.OnClickListener logIn;
-    private View.OnClickListener signUp;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,77 +57,14 @@ public class LogInActivity extends AppCompatActivity {
 
         if (keepSignedIn && savedUsername != null) {
             // Auto-login with saved username
-            FirebaseDatabase database = FirebaseDatabase.getInstance();
-            DatabaseReference usersRef = database.getReference("Users");
-            usersRef.orderByChild("userName").equalTo(savedUsername).addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    if (dataSnapshot.exists()) {
-                        // User found, proceed to MainActivity
-                        Intent intent = new Intent(LogInActivity.this, MainActivity.class);
-                        intent.putExtra("USER_KEY", savedUsername);
-                        startActivity(intent);
-                        finish(); // Close the login activity
-                    }
-                }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-                    Log.w("AutoLogin", "Failed to read value.", databaseError.toException());
-                }
-            });
+            keepSignedIn(savedUsername);
         }
 
         logInBT = findViewById(R.id.logBT);
         logInBT.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!isInternetAvailable()) {
-                    Toast.makeText(LogInActivity.this, "Service not available. Please check your internet connection.", Toast.LENGTH_LONG).show();
-                    return;
-                }
-                String username = userNameET.getText().toString().trim();
-                String password = passwordET.getText().toString().trim();
-                if (username.isEmpty() || password.isEmpty()) {
-                    Toast.makeText(LogInActivity.this, "Please enter both username and password", Toast.LENGTH_SHORT).show();
-                } else {
-                    FirebaseDatabase database = FirebaseDatabase.getInstance();
-                    DatabaseReference usersRef = database.getReference("Users");
-                    usersRef.orderByChild("userName").equalTo(username).addListenerForSingleValueEvent(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(DataSnapshot dataSnapshot) {
-                            if (dataSnapshot.exists()) {
-                                // Username found, now check the password
-                                for (DataSnapshot userSnapshot : dataSnapshot.getChildren()) {
-                                    String storedPassword = userSnapshot.child("password").getValue(String.class);
-                                    if (storedPassword != null && storedPassword.equals(password)) {
-                                        // Password matches, login successful
-                                        SharedPreferences prefs = getSharedPreferences("AppSettings", Context.MODE_PRIVATE);
-                                        prefs.edit().putString("logged_in_user", username).apply();
-                                        
-                                        Intent intent = new Intent(LogInActivity.this, MainActivity.class);
-                                        intent.putExtra("USER_KEY", username);
-                                        startActivity(intent);
-                                        finish(); // Close the login activity
-                                    } else {
-                                        // Password does not match
-                                        Toast.makeText(LogInActivity.this, "Incorrect password", Toast.LENGTH_SHORT).show();
-                                    }
-                                }
-                            } else {
-                                // No user found with the entered username
-                                Toast.makeText(LogInActivity.this, "User not found", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-
-                        @Override
-                        public void onCancelled(DatabaseError databaseError) {
-                            // Handle any error (e.g., network issues)
-                            Log.w("Login", "Failed to read value.", databaseError.toException());
-                            Toast.makeText(LogInActivity.this, "Error while checking credentials", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                }
+                checkAndLogIn();
             }
         });
         userNameET = findViewById(R.id.nameET);
@@ -153,12 +88,102 @@ public class LogInActivity extends AppCompatActivity {
     }
 
     /**
+     * Handles automatic login for users who have chosen to stay signed in.
+     * This method verifies the saved username against the Firebase database
+     * and automatically logs in the user if the credentials are valid.
+     * 
+     * @param savedUsername The username saved in SharedPreferences for auto-login
+     */
+    private void keepSignedIn(String savedUsername) {
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference usersRef = database.getReference("Users");
+        usersRef.orderByChild("userName").equalTo(savedUsername).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    // User found, proceed to MainActivity
+                    Intent intent = new Intent(LogInActivity.this, MainActivity.class);
+                    intent.putExtra("USER_KEY", savedUsername);
+                    startActivity(intent);
+                    finish(); // Close the login activity
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.w("AutoLogin", "Failed to read value.", databaseError.toException());
+            }
+        });
+    }
+
+    /**
      * Checks if the device has an active internet connection.
+     * This method is used to verify network connectivity before attempting
+     * to perform network operations like login or database access.
+     *
      * @return true if there is an active internet connection, false otherwise
      */
     private boolean isInternetAvailable() {
         android.net.ConnectivityManager connectivityManager = (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         android.net.NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
         return networkInfo != null && networkInfo.isConnected();
+    }
+
+    /**
+     * Handles the login process by validating user credentials against the Firebase database.
+     * This method:
+     * 1. Checks for internet connectivity
+     * 2. Validates that username and password fields are not empty
+     * 3. Queries the Firebase database to verify credentials
+     * 4. Handles successful login by saving user state and navigating to MainActivity
+     * 5. Provides appropriate feedback for various error conditions
+     */
+    private void checkAndLogIn(){
+        if (!isInternetAvailable()) {
+            Toast.makeText(LogInActivity.this, "Service not available. Please check your internet connection.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        String username = userNameET.getText().toString().trim();
+        String password = passwordET.getText().toString().trim();
+        if (username.isEmpty() || password.isEmpty()) {
+            Toast.makeText(LogInActivity.this, "Please enter both username and password", Toast.LENGTH_SHORT).show();
+        } else {
+            FirebaseDatabase database = FirebaseDatabase.getInstance();
+            DatabaseReference usersRef = database.getReference("Users");
+            usersRef.orderByChild("userName").equalTo(username).addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    if (dataSnapshot.exists()) {
+                        // Username found, now check the password
+                        for (DataSnapshot userSnapshot : dataSnapshot.getChildren()) {
+                            String storedPassword = userSnapshot.child("password").getValue(String.class);
+                            if (storedPassword != null && storedPassword.equals(password)) {
+                                // Password matches, login successful
+                                SharedPreferences prefs = getSharedPreferences("AppSettings", Context.MODE_PRIVATE);
+                                prefs.edit().putString("logged_in_user", username).apply();
+
+                                Intent intent = new Intent(LogInActivity.this, MainActivity.class);
+                                intent.putExtra("USER_KEY", username);
+                                startActivity(intent);
+                                finish(); // Close the login activity
+                            } else {
+                                // Password does not match
+                                Toast.makeText(LogInActivity.this, "Incorrect password", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    } else {
+                        // No user found with the entered username
+                        Toast.makeText(LogInActivity.this, "User not found", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    // Handle any error (e.g., network issues)
+                    Log.w("Login", "Failed to read value.", databaseError.toException());
+                    Toast.makeText(LogInActivity.this, "Error while checking credentials", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 }

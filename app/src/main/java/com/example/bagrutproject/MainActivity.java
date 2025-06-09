@@ -57,6 +57,18 @@ import java.util.Date;
 import java.util.List;
 import java.text.SimpleDateFormat;
 
+/**
+ * Main activity of the application that serves as the primary interface for budget management.
+ * This activity handles:
+ * - Display and management of user's budget information
+ * - Navigation between different sections of the app
+ * - Dark mode theme switching
+ * - Internet connectivity checks
+ * - Daily budget notifications scheduling
+ * - Monthly budget resets
+ * - Transaction history and management
+ * - Income and expense tracking
+ */
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
     private DrawerLayout drawerLayout;
     TextView nav_name;
@@ -287,6 +299,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+    /**
+     * Loads all transactions (incomes and expenses) for the current user from Firebase.
+     * Transactions are sorted by date and displayed in the RecyclerView.
+     */
     private void loadTransactions() {
         if (username == null) {
             Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
@@ -332,6 +348,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         });
     }
 
+    /**
+     * Loads spending transactions from Firebase for the current user.
+     * Called after loading incomes to ensure proper transaction ordering.
+     */
     private void loadSpends() {
         if (username == null) {
             Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
@@ -372,6 +392,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         });
     }
 
+    /**
+     * Updates the transactions list in the RecyclerView adapter.
+     * Sorts transactions by date (most recent first) and handles any errors during the update.
+     */
     private void updateTransactionsList() {
         try {
             Log.d("Transactions", "Updating transactions list. Size: " + transactions.size());
@@ -398,6 +422,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+    /**
+     * Updates a specific value in Firebase for the current user.
+     * @param username The username of the current user
+     * @param field The field to update (e.g., "incomes", "spends", "balance")
+     * @param addedAmount The amount to add to the current value
+     */
     private void updateValue(String username, String field, double addedAmount) {
         checkInternetConnection();
         DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(username);
@@ -476,6 +506,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+    /**
+     * Displays the current user's name in the navigation drawer header.
+     * Fetches the user's full name from Firebase and updates the UI accordingly.
+     */
     public void UserName() {
         checkInternetConnection();
         DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("Users");
@@ -502,6 +536,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         });
     }
 
+    /**
+     * Opens a new fragment in the main container.
+     * @param fragment The fragment to be displayed
+     */
     private void openFragment(Fragment fragment) {
         checkInternetConnection();
         findViewById(R.id.balance_container).setVisibility(View.GONE);
@@ -512,6 +550,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         transaction.commit();
     }
 
+    /**
+     * Checks and resets budget values if necessary based on the current date.
+     * Handles monthly resets and budget end dates.
+     */
     private void resetValuesIfNeeded() {
         checkInternetConnection();
         DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(username);
@@ -567,6 +609,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         });
     }
 
+    /**
+     * Schedules a daily budget notification for the specified user.
+     * The notification will be sent at 8:00 AM if notifications are enabled.
+     * @param context The application context
+     * @param username The username to schedule notifications for
+     */
     public static void scheduleDailyBudgetNotification(Context context, String username) {
         SharedPreferences prefs = context.getSharedPreferences("AppSettings", Context.MODE_PRIVATE);
         boolean notificationsEnabled = prefs.getBoolean("notifications_enabled", false);
@@ -629,12 +677,20 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         Log.d("Notifications", "Notification scheduled successfully");
     }
+
+    /**
+     * Checks the current internet connection and displays a toast message if no connection is available.
+     */
     private void checkInternetConnection() {
         if (!isNetworkAvailable()) {
             Toast.makeText(this, "No internet connection", Toast.LENGTH_LONG).show();
         }
     }
 
+    /**
+     * Checks if the device has an active internet connection.
+     * @return true if there is an active internet connection, false otherwise
+     */
     private boolean isNetworkAvailable() {
         ConnectivityManager connectivityManager =
                 (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -644,7 +700,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
         return false;
     }
-    private void addIncome(){
+
+    /**
+     * Handles adding a new income entry to the user's account.
+     * Updates the UI and Firebase database with the new income amount.
+     */
+    private void addIncome() {
         checkInternetConnection();
         if (editIncome.getVisibility() == View.GONE) {
             editIncome.setVisibility(View.VISIBLE);
@@ -669,7 +730,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         }
     }
-    private void updateTexts(DataSnapshot snapshot){
+
+    /**
+     * Updates the UI text fields with the user's current financial information.
+     * @param snapshot The DataSnapshot containing the user's financial data
+     */
+    private void updateTexts(DataSnapshot snapshot) {
         checkInternetConnection();
         if (snapshot.exists()) {
             boolean hasIncome = snapshot.hasChild("incomes");
@@ -692,7 +758,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         }
     }
-    private void updateTextsBudget(DataSnapshot snapshot){
+
+    /**
+     * Updates the UI with the user's current budget information and progress.
+     * @param snapshot The DataSnapshot containing the user's budget data
+     */
+    private void updateTextsBudget(DataSnapshot snapshot) {
         if (snapshot.exists()) {
             MBudget budget = snapshot.child("Budget").getValue(MBudget.class);
             Double totalSpends = snapshot.child("spends").getValue(Double.class);
